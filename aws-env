@@ -67,9 +67,9 @@ parse_credentials() {
 }
 
 output() {
-  echo "# Environment vars for AWS profile \"${PROFILE}\""
-  echo "export DEFAULT_PROFILE=${PROFILE}"
   echo "$1"
+  echo "export AWS_DEFAULT_PROFILE=${PROFILE}"
+  echo "# Environment vars for AWS profile \"${PROFILE}\""
   echo "# Configure environment by running:"
   echo '# eval $('"$PROGNAME"' --profile '"$PROFILE"')'
 }
