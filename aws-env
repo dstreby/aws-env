@@ -70,6 +70,8 @@ output() {
   echo "# Environment vars for AWS profile \"${PROFILE}\""
   echo "export DEFAULT_PROFILE=${PROFILE}"
   echo "$1"
+  echo "# Configure environment by running:"
+  echo '# eval $('"$PROGNAME"' --profile '"$PROFILE"')'
 }
 
 main() {
