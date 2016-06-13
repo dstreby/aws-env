@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+
+readonly PROGNAME=$(basename $0)
+readonly ARGS="$@"
+
+usage() {
+  cat <<-EOF
+  usage: $PROGNAME options
+
+  Set environment variables for AWS based on profile
+
+  OPTIONS:
+    -p --profile      choose a profile (default: default)
+    -c --credentials  path to credential file (default: ~/.aws/credentials)
+    -h --help         shows this help
+
+EOF
+}
+
+cmdline() {
+  local arg=
+  for arg; do
+    local delim=""
+    case "$arg" in
+      --profile)     args="${args}-p ";;
+      --credentials) args="${args}-c ";;
+      *) [[ "${arg:0:1}" == "-" ]] || delim="\""
+        args="${args}${delim}${arg}${delim} ";;
+    esac
+  done
+
+  eval set -- $args
+
+  while getopts "p:c:h" OPTION; do
+    case $OPTION in
+      p)
+        local opt_profile="$OPTARG";;
+      c)
+        local opt_credentials="$OPTARG";;
+      *)
+        usage
+        exit 0;;
+    esac
+  done
+
+  readonly PROFILE="${opt_profile:-default}"
+  readonly CREDENTIALS="${opt_credentials:-$HOME/.aws/credentials}"
+}
+
+error() {
+  echo -e "[ERROR]: ${@}. Exiting" 1>&2
+  exit 1
+}
+
+validate_profile() {
+  [[ -f "$CREDENTIALS" ]] \
+    || error "Credentials file \"$CREDENTIALS\" not found"
+
+  grep -q "^\[${PROFILE}\]$" "$CREDENTIALS" \
+    || error "Profile \"$PROFILE\" not found in $CREDENTIALS"
+}
+
+parse_credentials() {
+  awk '/^\['"${PROFILE}"'\]$/ { flag=1; next }
+  !/^([^\[]|\['"${PROFILE}"'\]).*$/ { flag=0 }
+  flag { printf "export %s=%s\n", toupper($1), $3 }' "$CREDENTIALS"
+}
+
+output() {
+  echo "# Environment vars for AWS profile \"${PROFILE}\""
+  echo "export DEFAULT_PROFILE=${PROFILE}"
+  echo "$1"
+}
+
+main() {
+  cmdline $ARGS
+  validate_profile
+  local aws_vars="$(parse_credentials)"
+  output "$aws_vars"
+  return 0
+}
+
+main
