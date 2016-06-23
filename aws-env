@@ -12,6 +12,7 @@ usage() {
   OPTIONS:
     -p --profile      choose a profile (default: default)
     -c --credentials  path to credential file (default: ~/.aws/credentials)
+    -l --list         list available profiles
     -h --help         shows this help
 
 EOF
@@ -24,6 +25,7 @@ cmdline() {
     case "$arg" in
       --profile)     args="${args}-p ";;
       --credentials) args="${args}-c ";;
+      --list)        args="${args}-l ";;
       *) [[ "${arg:0:1}" == "-" ]] || delim="\""
         args="${args}${delim}${arg}${delim} ";;
     esac
@@ -31,12 +33,14 @@ cmdline() {
 
   eval set -- $args
 
-  while getopts "p:c:h" OPTION; do
+  while getopts "p:c:lh" OPTION; do
     case $OPTION in
       p)
         local opt_profile="$OPTARG";;
       c)
         local opt_credentials="$OPTARG";;
+      l)
+        readonly LIST_PROFILES=1;;
       *)
         usage
         exit 0;;
@@ -52,10 +56,12 @@ error() {
   exit 1
 }
 
-validate_profile() {
+validate_credentials() {
   [[ -f "$CREDENTIALS" ]] \
     || error "Credentials file \"$CREDENTIALS\" not found"
+}
 
+validate_profile() {
   grep -q "^\[${PROFILE}\]$" "$CREDENTIALS" \
     || error "Profile \"$PROFILE\" not found in $CREDENTIALS"
 }
@@ -75,6 +81,11 @@ output() {
 
 main() {
   cmdline $ARGS
+  validate_credentials
+  if [[ -n "$LIST_PROFILES" ]]; then
+    grep "^\[.*\]$" "$CREDENTIALS"
+    exit 0
+  fi
   validate_profile
   local aws_vars="$(parse_credentials)"
   output "$aws_vars"
