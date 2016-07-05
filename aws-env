@@ -13,6 +13,7 @@ usage() {
     -p --profile      choose a profile (default: default)
     -c --credentials  path to credential file (default: ~/.aws/credentials)
     -l --list         list available profiles
+    -s --show         show current AWS env vars
     -h --help         shows this help
 
 EOF
@@ -26,6 +27,7 @@ cmdline() {
       --profile)     args="${args}-p ";;
       --credentials) args="${args}-c ";;
       --list)        args="${args}-l ";;
+      --show)        args="${args}-s ";;
       *) [[ "${arg:0:1}" == "-" ]] || delim="\""
         args="${args}${delim}${arg}${delim} ";;
     esac
@@ -33,7 +35,7 @@ cmdline() {
 
   eval set -- $args
 
-  while getopts "p:c:lh" OPTION; do
+  while getopts "p:c:lsh" OPTION; do
     case $OPTION in
       p)
         local opt_profile="$OPTARG";;
@@ -41,6 +43,8 @@ cmdline() {
         local opt_credentials="$OPTARG";;
       l)
         readonly LIST_PROFILES=1;;
+      s)
+        readonly SHOW_AWS_ENV=1;;
       *)
         usage
         exit 0;;
@@ -66,6 +70,10 @@ validate_profile() {
     || error "Profile \"$PROFILE\" not found in $CREDENTIALS"
 }
 
+list_profiles() {
+    grep "^\[.*\]$" "$CREDENTIALS"
+}
+
 parse_credentials() {
   awk '/^\['"${PROFILE}"'\]$/ { flag=1; next }
   !/^([^\[]|\['"${PROFILE}"'\]).*$/ { flag=0 }
@@ -79,11 +87,20 @@ output() {
   echo '# eval $('"${PROGNAME}${ARGS:+ $ARGS}"')'
 }
 
+show_aws_env() {
+  echo "Current AWS environment variables:"
+  env | grep 'AWS' \
+    || echo "<none>"
+}
+
 main() {
   cmdline $ARGS
   validate_credentials
   if [[ -n "$LIST_PROFILES" ]]; then
-    grep "^\[.*\]$" "$CREDENTIALS"
+    list_profiles
+    exit 0
+  elif [[ -n "$SHOW_AWS_ENV" ]]; then
+    show_aws_env
     exit 0
   fi
   validate_profile
