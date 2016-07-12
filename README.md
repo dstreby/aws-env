@@ -10,7 +10,7 @@
       -l --list         list available profiles
       -h --help         shows this help
 
-## Credentials file
+## Functionality
 
 Your AWS Credentials file should adhere to the standard AWS format:
 
