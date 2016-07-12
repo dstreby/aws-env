@@ -1,5 +1,10 @@
 # aws-env
 
+A simple utility for switching between AWS accounts on the command line.
+
+The aim here is to keep dependencies to an absolute minimum. At present the 
+only dependencies are `bash`, `grep`, and `awk`.
+
 ## Usage
 
     Set environment variables for AWS based on profile
